@@ -43,27 +43,46 @@ def grub_data_from_url(date):
             yield ((artist.group(0), song.group(0)))
 
 
-def save_data_to_db():
-    date = session.query(Date).filter_by(date=get_date()).first()
-    if date is None:
-        grubber_date = get_date()
+def fromstr(date_string):
+    date_list = date_string.split("-")
+    year, month, day = [int(i) for i in date_list]
+    return datetime.date(year, month, day)
+
+
+def save_data(grubber_date):
         date = Date(date=grubber_date)
         session.add(date)
         session.commit()
         music_data = grub_data_from_url(grubber_date)
         for item in music_data:
             music_track = MusicTrack()
-            music_track.date_id = date.id
             music_track.artist = item[0]
             music_track.song = item[1]
+            music_track.date_id = date.id
             session.add(music_track)
-            session.commit()
+        session.commit()
         print("Data has been loaded successfully")
+
+
+def save_old_data_to_db(date_string):
+    date = session.query(Date).filter_by(date=fromstr(date_string)).first()
+    if date is None:
+        grubber_date = fromstr(date_string)
+        save_data(grubber_date)
     else:
-        print("Date is already stored in the database")
+        print("Data is already stored in the database")
+
+
+def save_recent_data_to_db():
+    date = session.query(Date).filter_by(date=get_date()).first()
+    if date is None:
+        grubber_date = get_date()
+        save_data(grubber_date)
+    else:
+        print("Data is already stored in the database")
     time.sleep(86400)
 
 
 if __name__ == "__main__":
     while True:
-        save_data_to_db()
+        save_recent_data_to_db()
